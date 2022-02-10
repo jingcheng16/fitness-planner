@@ -13,7 +13,7 @@ const ExerciseInput = ({ visible, onAddExercise, onCancel }: Props) => {
 
     const exerciseInputHandler = (e: NativeSyntheticEvent<TextInputChangeEventData>): void => {
         const value = e.nativeEvent.text;
-        setEnteredExercise(value)
+        setEnteredExercise(value);
     }
 
     const addExerciseHandler = () => {
@@ -37,7 +37,7 @@ const ExerciseInput = ({ visible, onAddExercise, onCancel }: Props) => {
                     <Input
                         placeholder="Exercise"
                         style={styles.input}
-                        onChangeText={exerciseInputHandler}
+                        onChange={exerciseInputHandler}
                         value={enteredExercise}
                     />
                     <View style={styles.buttonContainer}>

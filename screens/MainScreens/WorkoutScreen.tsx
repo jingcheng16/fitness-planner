@@ -10,10 +10,16 @@ import ExerciseInput from '../../components/ExerciseInput';
 export default function WorkoutScreen() {
     const [exerciseList, setExerciseList] = useState<{ id: string, value: string }[]>([]);
     const [isAddMode, setIsAddMode] = useState(false);
+    const [isSaveMode, setIsSaveMode] = useState(false);
     const [currentDate, setCurrentDate] = useState<string>("");
     const [dateList, setDateList] = useState<string[]>([]);
 
     useEffect(() => { getCurrentDate() }, []);
+
+    const saveHandler = () => {
+        setIsSaveMode(true)
+        storeData(exerciseList)
+    }
 
     const addExerciseHandler = (exerciseTitle: string) => {
         if (exerciseTitle != '') {
@@ -35,6 +41,7 @@ export default function WorkoutScreen() {
 
     const getCurrentDate = () => {
         let stringDate: string;
+        let stringMonth: string;
         let date = new Date().getDate();
         if (date < 10) {
             stringDate = "0" + date;
@@ -42,11 +49,16 @@ export default function WorkoutScreen() {
             stringDate = date + "";
         }
         let month = new Date().getMonth() + 1;
+        if (month < 10) {
+            stringMonth = "0" + month;
+        } else {
+            stringMonth = month + "";
+        }
         let year = new Date().getFullYear();
 
         //Alert.alert(date + '-' + month + '-' + year);
         // You can turn it in to your desired format
-        setCurrentDate(year + '-' + month + '-' + stringDate);
+        setCurrentDate(year + '-' + stringMonth + '-' + stringDate);
     }
 
     const storeData = async (value: { id: string, value: string }[]) => {
@@ -60,6 +72,7 @@ export default function WorkoutScreen() {
             }
             const jsonValue2 = JSON.stringify(dateList);
             await AsyncStorage.setItem("@dateList", jsonValue2)
+            setIsSaveMode(false);
         } catch (e) {
             console.log("error in storeData ")
             console.dir(e)
@@ -80,7 +93,7 @@ export default function WorkoutScreen() {
 
                 }
             />
-            <Button title="save" onPress={() => storeData(exerciseList)} />
+            <Button title="save" onPress={saveHandler} />
 
         </View>
     )
