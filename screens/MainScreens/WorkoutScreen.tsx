@@ -7,6 +7,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import WorkoutItem from '../../components/WorkoutItem';
 import ExerciseInput from '../../components/ExerciseInput';
 
+//newly added
+import database from '../../firebase'
+import { getDatabase, ref, onValue, set } from 'firebase/database';
+
 export default function WorkoutScreen() {
     const [exerciseList, setExerciseList] = useState<{ id: string, value: string }[]>([]);
     const [isAddMode, setIsAddMode] = useState(false);
@@ -18,7 +22,7 @@ export default function WorkoutScreen() {
 
     const saveHandler = () => {
         setIsSaveMode(true)
-        storeData(exerciseList)
+        storeData()
     }
 
     const addExerciseHandler = (exerciseTitle: string) => {
@@ -61,24 +65,34 @@ export default function WorkoutScreen() {
         setCurrentDate(year + '-' + stringMonth + '-' + stringDate);
     }
 
-    const storeData = async (value: { id: string, value: string }[]) => {
-        try {
-            const jsonValue = JSON.stringify(value)
-            console.log(currentDate.toString());
-            await AsyncStorage.setItem(currentDate.toString(), jsonValue)
-            console.log('just stored ' + currentDate.toString() + jsonValue)
-            if (dateList.indexOf(currentDate.toString()) < 0) {
-                setDateList([...dateList, currentDate.toString()])
-            }
-            const jsonValue2 = JSON.stringify(dateList);
-            await AsyncStorage.setItem("@dateList", jsonValue2)
-            setIsSaveMode(false);
-        } catch (e) {
-            console.log("error in storeData ")
-            console.dir(e)
-            // saving error
-        }
+    // const storeData = async (value: { id: string, value: string }[]) => {
+    //     try {
+    //         const jsonValue = JSON.stringify(value)
+    //         console.log(currentDate.toString());
+    //         await AsyncStorage.setItem(currentDate.toString(), jsonValue)
+    //         console.log('just stored ' + currentDate.toString() + jsonValue)
+    //         if (dateList.indexOf(currentDate.toString()) < 0) {
+    //             setDateList([...dateList, currentDate.toString()])
+    //         }
+    //         const jsonValue2 = JSON.stringify(dateList);
+    //         await AsyncStorage.setItem("@dateList", jsonValue2)
+    //         setIsSaveMode(false);
+    //     } catch (e) {
+    //         console.log("error in storeData ")
+    //         console.dir(e)
+    //         // saving error
+    //     }
+    // }
+
+    function storeData() {
+        console.log('try store data');
+        const db = getDatabase();
+        const reference = ref(database, currentDate);
+        set(reference, {
+            exerciseList,
+        });
     }
+
 
     return (
         <View style={styles.screen}>
