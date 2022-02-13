@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Button, Text, View, TextInput, Image, ScrollView, FlatList } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 import WorkoutItem from '../../components/WorkoutItem';
 import ExerciseInput from '../../components/ExerciseInput';
+import LoadingModal from '../../components/LoadingModal';
 
 //newly added
 import database from '../../firebase'
@@ -17,12 +19,41 @@ export default function WorkoutScreen() {
     const [isSaveMode, setIsSaveMode] = useState(false);
     const [currentDate, setCurrentDate] = useState<string>("");
     const [dateList, setDateList] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const url = "https://us-east4-recirclable-dev.cloudfunctions.net/call-ping";
+
+
 
     useEffect(() => { getCurrentDate() }, []);
 
+    const jsonBody = {
+        data: {
+            args: ["wait"]
+        }
+    }
+
+    const pingFunction = async () => {
+        try {
+            const response = await axios.post(url, jsonBody);
+            console.log(response.data.result.success)
+            if (response.data.result.success) {
+                setIsLoading(false)
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const cancelSaveModeHandler = () => {
+        setIsSaveMode(false);
+        setIsLoading(false);
+    }
+
     const saveHandler = () => {
+        setIsLoading(true)
         setIsSaveMode(true)
         storeData()
+        pingFunction()
     }
 
     const addExerciseHandler = (exerciseTitle: string) => {
@@ -42,6 +73,8 @@ export default function WorkoutScreen() {
     const cancelExerciseAdditionHandler = () => {
         setIsAddMode(false);
     }
+
+
 
     const getCurrentDate = () => {
         let stringDate: string;
@@ -65,25 +98,6 @@ export default function WorkoutScreen() {
         setCurrentDate(year + '-' + stringMonth + '-' + stringDate);
     }
 
-    // const storeData = async (value: { id: string, value: string }[]) => {
-    //     try {
-    //         const jsonValue = JSON.stringify(value)
-    //         console.log(currentDate.toString());
-    //         await AsyncStorage.setItem(currentDate.toString(), jsonValue)
-    //         console.log('just stored ' + currentDate.toString() + jsonValue)
-    //         if (dateList.indexOf(currentDate.toString()) < 0) {
-    //             setDateList([...dateList, currentDate.toString()])
-    //         }
-    //         const jsonValue2 = JSON.stringify(dateList);
-    //         await AsyncStorage.setItem("@dateList", jsonValue2)
-    //         setIsSaveMode(false);
-    //     } catch (e) {
-    //         console.log("error in storeData ")
-    //         console.dir(e)
-    //         // saving error
-    //     }
-    // }
-
     function storeData() {
         console.log('try store data');
         const db = getDatabase();
@@ -93,7 +107,6 @@ export default function WorkoutScreen() {
         });
     }
 
-
     return (
         <View style={styles.screen}>
             <Button title="Add new Exercise" onPress={() => setIsAddMode(true)} />
@@ -102,13 +115,11 @@ export default function WorkoutScreen() {
                 //keyExtractor={(item, index) => item.id}
                 data={exerciseList}
                 renderItem={(itemData) =>
-
                     <WorkoutItem id={itemData.item.id} title={itemData.item.value} onDelete={removeExerciseHandler} />
-
                 }
             />
             <Button title="save" onPress={saveHandler} />
-
+            <LoadingModal visible={isSaveMode} isLoading={isLoading} onCancel={cancelSaveModeHandler} />
         </View>
     )
 }
