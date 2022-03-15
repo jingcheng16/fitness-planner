@@ -18,7 +18,7 @@ type Props = {
 const LoadingModal = ({ visible, isLoading, isError }: Props) => {
   const loadingIndicator = () => {
     if (isError) {
-      return <Text>Something run!</Text>;
+      return <Text>Something went wrong!</Text>;
     } else {
       if (isLoading) {
         return <Text>Loading...</Text>;

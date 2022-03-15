@@ -1,5 +1,3 @@
-// import * as React from 'react';
-// import { StyleSheet, Button, Text, View } from 'react-native';
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
@@ -28,9 +26,11 @@ export default function WorkoutScreen() {
   const [isAddMode, setIsAddMode] = useState(false);
   const [isSaveMode, setIsSaveMode] = useState(false);
   const [currentDate, setCurrentDate] = useState<string>(getCurrentDate());
-  const [dateList, setDateList] = useState<string[]>([]);
+  const [hasError, setHasError] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isError, setIsError] = useState<boolean>(false);
+  const [isPingError, setIsPingError] = useState<boolean>(false);
+  const [isStoreDataError, setIsStoreDataError] = useState<boolean>(false);
+  const [showWorkingStatus, setShowWorkingStatus] = useState<boolean>(false);
   const url = "https://us-east4-recirclable-dev.cloudfunctions.net/call-ping";
 
   const jsonBody = {
@@ -39,30 +39,53 @@ export default function WorkoutScreen() {
     },
   };
 
-  const pingFunction = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axios.post(url, jsonBody);
-      if (response.data.result.success) {
-        setIsLoading(false);
-      }
-      setTimeout(() => setIsSaveMode(false), 2000);
-    } catch (error) {
-      console.error(error);
-      setIsError(true);
+  useEffect(() => {
+    setHasError(isPingError || isStoreDataError);
+  }, [isPingError, isStoreDataError]);
+
+  useEffect(() => {
+    UIManagement(isLoading, isSaveMode);
+  }, [isLoading, isSaveMode]);
+
+  const UIManagement = (isLoading: boolean, isSaveMode: boolean) => {
+    if (isLoading || isSaveMode) {
+      setShowWorkingStatus(true);
+    } else {
       setTimeout(() => {
-        setIsSaveMode(false);
-        setIsError(false);
+        setShowWorkingStatus(false);
       }, 2000);
     }
   };
 
-  const saveHandler = () => {
+  const pingFunction = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.post(url, jsonBody);
+    } catch (error) {
+      setIsPingError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const storeData = async () => {
     setIsSaveMode(true);
+    try {
+      const reference = ref(database, currentDate);
+      const res = await set(reference, { exerciseList });
+    } catch (error) {
+      setIsStoreDataError(true);
+    } finally {
+      setIsSaveMode(false);
+    }
+  };
+
+  const saveHandler = () => {
     storeData();
     pingFunction();
   };
 
+  // Add exercise in add modal
   const addExerciseHandler = (exerciseTitle: string) => {
     if (exerciseTitle != "") {
       setExerciseList((currentList) => [
@@ -73,26 +96,17 @@ export default function WorkoutScreen() {
     setIsAddMode(false);
   };
 
+  // Remove exercise in add modal
   const removeExerciseHandler = (exerciseId: string) => {
     setExerciseList((currentList) => {
       return currentList.filter((exercise) => exercise.id !== exerciseId);
     });
   };
 
+  // Cancel addition in add modal
   const cancelExerciseAdditionHandler = () => {
     setIsAddMode(false);
   };
-
-  async function storeData() {
-    console.log("try store data");
-    try {
-      const reference = ref(database, currentDate);
-      const res = await set(reference, { exerciseList });
-    } catch (error) {
-      setIsError(true);
-      console.log("Error! 💥");
-    }
-  }
 
   return (
     <View style={styles.screen}>
@@ -114,14 +128,14 @@ export default function WorkoutScreen() {
         )}
       />
       <Button
-        title={isSaveMode ? "saving..." : "save"}
-        disabled={isSaveMode}
+        title={showWorkingStatus ? "saving..." : "save"}
+        disabled={showWorkingStatus}
         onPress={saveHandler}
       />
       <LoadingModal
-        visible={isSaveMode}
+        visible={showWorkingStatus}
         isLoading={isLoading}
-        isError={isError}
+        isError={hasError}
       />
     </View>
   );

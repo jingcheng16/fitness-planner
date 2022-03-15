@@ -1,7 +1,7 @@
 // import * as React from 'react';
 // import { StyleSheet, Button, Text, View } from 'react-native';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   Button,
@@ -26,6 +26,7 @@ import {
   onValue,
   query,
   orderByKey,
+  Unsubscribe,
 } from "firebase/database";
 import database from "../../firebase";
 
@@ -35,45 +36,26 @@ export default function LogScreen() {
   >([]);
   const [date, setDate] = useState<string>(getCurrentDate());
 
-  //   const getData = () => {
-  //     if (date) {
-  //       console.log("date" + date);
-  //       const ListRef = ref(database, date);
-  //       get(ListRef)
-  //         .then((snapshot) => {
-  //           if (snapshot.exists()) {
-  //             const data = snapshot.val();
-  //             console.log(data);
-  //             const exerciseObjectArray = data.exerciseList;
-  //             setExerciseList(exerciseObjectArray);
-  //           } else {
-  //             setExerciseList([]);
-  //             console.log("No data available");
-  //           }
-  //         })
-  //         .catch((error) => console.error(error));
-  //     }
-  //   };
-
-  useEffect(() => getData(), [date]);
-
-  const getData = () => {
-    if (date) {
-      console.log("date" + date);
-      const ListRef = ref(database, date);
-      return onValue(ListRef, (snapshot) => {
+  const getData = (selectedDate: string) => {
+    let returnArray: { id: string; value: string }[] = [];
+    if (selectedDate) {
+      console.log("date" + selectedDate);
+      const ListRef = ref(database, selectedDate);
+      onValue(ListRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
-          console.log(data);
-          const exerciseObjectArray = data.exerciseList;
-          setExerciseList(exerciseObjectArray);
-        } else {
-          setExerciseList([]);
-          console.log("No data available");
+          returnArray = data.exerciseList;
         }
       });
     }
+    return returnArray;
   };
+  const unsubscribe = useCallback(() => getData(date), [date]);
+
+  useEffect(() => {
+    unsubscribe();
+    setExerciseList(getData(date));
+  }, [date]);
 
   return (
     <View>
